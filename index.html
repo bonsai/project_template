@@ -31,6 +31,15 @@
         const file = this.files[0];
         if (!file) return;
 
+        // Check file size (0.5MB = 524288 bytes)
+        const MAX_SIZE = 0.5 * 1024 * 1024;
+        if (file.size > MAX_SIZE) {
+            alert('ファイルサイズは0.5MB以下にしてください。');
+            $(this).val(''); // Clear the input
+            $('#result').empty(); // Clear previous result
+            return;
+        }
+
         const formData = new FormData();
         formData.append("image", file);
         formData.append("shape", $('input[name="shape"]:checked').val());
