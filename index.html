@@ -34,7 +34,8 @@ $('#file').on('change', function () {
     formData.append("shape", $('input[name="shape"]:checked').val());
 
     $.ajax({
-        url: "frame.cgi",
+        // Vercel Ruby API Endpoint
+        url: "/api/upload",
         type: "POST",
         data: formData,
         processData: false,
