@@ -35,31 +35,7 @@ begin
   temp_file.write(icon_image.read)
   temp_file.close
 
-  # Resolve frame image path
-  # Try relative paths from cgi-bin
-  frame_image = "../frames/default.png"
-  
-  if File.exist?("../frames/mirai_frame.png")
-    frame_image = "../frames/mirai_frame.png"
-  elsif File.exist?("../mirai_frame.png")
-    frame_image = "../mirai_frame.png"
-  elsif File.exist?("mirai_frame.png")
-    frame_image = "mirai_frame.png"
-  end
-
-  unless File.exist?(frame_image) && File.size(frame_image) > 0
-    # Fallback search
-    possible = ["../frames/default.png", "frames/default.png", "../frames/mirai_frame.png"]
-    found = possible.find { |p| File.exist?(p) }
-    if found
-      frame_image = found
-    else
-      print "Content-type: text/plain\n"
-      print "Status: 500 Internal Server Error\n\n"
-      print "Error: Frame image not found."
-      exit
-    end
-  end
+  require 'base64'
 
   # Setup output file
   out_dir = "../output"
@@ -70,33 +46,29 @@ begin
   
   # ImageMagick Command
   if shape == 'circle'
-    # 1. Base Composite (Square fixed for Circle)
-    cmd = "magick \"#{temp_file.path}\" -resize \"400x400^\" -gravity center -extent 400x400 \"#{frame_image}\" -gravity center -composite \"#{out_path}\""
+    # Circle with Border (Programmatic)
+    border_color = "#89C997"
+    border_width = 20
+    
+    cmd = "magick \"#{temp_file.path}\" -resize \"400x400^\" -gravity center -extent 400x400 " +
+          "\\( +clone -alpha transparent -fill white -draw \"circle 200,200 200,0\" \\) -compose DstIn -composite " +
+          "\\( +clone -alpha transparent -stroke \"#{border_color}\" -strokewidth #{border_width} -fill none -draw \"circle 200,200 200,#{border_width/2}\" \\) -compose Over -composite " +
+          "\"#{out_path}\""
+          
     system(cmd)
     
     unless $?.success?
       print "Content-type: text/plain\n"
       print "Status: 500 Internal Server Error\n\n"
-      print "Error: Failed to execute ImageMagick (Circle Base)."
+      print "Error: Failed to execute ImageMagick (Circle)."
       exit
     end
 
-    # 2. Crop circle
-    tmp_circle = out_path + ".circle.png"
-    cmd_circle = "magick \"#{out_path}\" ( +clone -alpha transparent -fill white -draw \"circle 200,200 200,0\" ) -compose DstIn -composite \"#{tmp_circle}\""
-    system(cmd_circle)
-    
-    if $?.success?
-      FileUtils.mv(tmp_circle, out_path)
-    end
   else
-    # Square / Original Shape
-    # Keep original aspect ratio, resize if too large, add simple colored border
+    # Square with Border (Programmatic)
     cmd = "magick \"#{temp_file.path}\" -resize \"800x800>\" -bordercolor \"#89C997\" -border 20 \"#{out_path}\""
     system(cmd)
     
-require 'base64'
-
     unless $?.success?
       print "Content-type: text/plain\n"
       print "Status: 500 Internal Server Error\n\n"

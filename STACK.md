@@ -20,11 +20,12 @@
 - **Image Processing**:
   - **Tool**: ImageMagick (`magick` CLI)
   - **Process**:
-    1. Resize uploaded image to 400x400 (Centered/Cover).
-    2. Composite with Frame (`frames/default.png` or `mirai_frame.png`).
-    3. (Optional) Mask to Circle if requested.
-    4. Encodes result to Base64.
-  - **Output**: Returns HTML fragment with Data URI image and download link.
+    1. Receives image via POST.
+    2. Resizes and applies border using ImageMagick (Programmatic, no frame images).
+       - **Square**: Resizes to max 800x800, adds 20px border.
+       - **Circle**: Resizes to 400x400 square, crops to circle, draws 20px stroke border.
+    3. Encodes result to Base64.
+    4. Returns HTML fragment with Data URI image and download link.
 
 ## Files
 - `index.html`: Frontend UI.

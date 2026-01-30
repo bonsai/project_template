@@ -31,58 +31,40 @@ Handler = Proc.new do |req, res|
   in_path = "/tmp/input_#{timestamp}.png"
   File.binwrite(in_path, content)
   
-  # Resolve frame path
-  possible_paths = [
-    File.join(Dir.pwd, 'frames', 'mirai_frame.png'),
-    File.join(Dir.pwd, '..', 'frames', 'mirai_frame.png'),
-    File.join(Dir.pwd, 'mirai_frame.png'),
-    File.join(Dir.pwd, 'frames', 'default.png')
-  ]
-  
-  frame_path = possible_paths.find { |p| File.exist?(p) }
-  
-  unless frame_path
-    res.status = 500
-    res.body = "Frame image not found. CWD: #{Dir.pwd}"
-    next
-  end
-
   out_path = "/tmp/output_#{timestamp}.png"
 
   # ImageMagick commands
   if shape == 'circle'
-    # 1. Base Composite (Square fixed for Circle)
-    # Using existing frame logic for circle to maintain icon standard
-    cmd = "magick \"#{in_path}\" -resize \"400x400^\" -gravity center -extent 400x400 \"#{frame_path}\" -gravity center -composite \"#{out_path}\""
+    # Circle with Border (Programmatic)
+    # 1. Resize/Crop to square 400x400
+    # 2. Mask to Circle
+    # 3. Draw Green Border
+    
+    # Border settings
+    border_color = "#89C997"
+    border_width = 20
+    
+    # Complex command:
+    # - Resize/Extent to 400x400
+    # - Clone image -> Create Circle Mask -> Apply Mask (DstIn)
+    # - Clone result -> Clear transparent -> Draw Circle Stroke -> Composite Over
+    
+    cmd = "magick \"#{in_path}\" -resize \"400x400^\" -gravity center -extent 400x400 " +
+          "\\( +clone -alpha transparent -fill white -draw \"circle 200,200 200,0\" \\) -compose DstIn -composite " +
+          "\\( +clone -alpha transparent -stroke \"#{border_color}\" -strokewidth #{border_width} -fill none -draw \"circle 200,200 200,#{border_width/2}\" \\) -compose Over -composite " +
+          "\"#{out_path}\""
     
     stdout, stderr, status = Open3.capture3(cmd)
     
     unless status.success?
       res.status = 500
-      res.body = "ImageMagick processing failed (Circle Base). Command: #{cmd}\nSTDERR: #{stderr}\nSTDOUT: #{stdout}"
+      res.body = "ImageMagick processing failed (Circle). Command: #{cmd}\nSTDERR: #{stderr}\nSTDOUT: #{stdout}"
       next
     end
 
-    # 2. Crop circle
-    tmp_circle = out_path + ".circle.png"
-    cmd_circle = "magick \"#{out_path}\" ( +clone -alpha transparent -fill white -draw \"circle 200,200 200,0\" ) -compose DstIn -composite \"#{tmp_circle}\""
-    
-    stdout, stderr, status = Open3.capture3(cmd_circle)
-    
-    unless status.success?
-       res.status = 500
-       res.body = "ImageMagick processing failed (Circle Crop). Command: #{cmd_circle}\nSTDERR: #{stderr}"
-       next
-    end
-    
-    if File.exist?(tmp_circle)
-      FileUtils.mv(tmp_circle, out_path)
-    end
   else
-    # Square / Original Shape
+    # Square with Border (Programmatic)
     # Keep original aspect ratio, resize if too large, add simple colored border
-    # Color: #89C997 (Team Mirai Official Color)
-    # Border width: 20px (fixed for simplicity, or could be relative)
     
     cmd = "magick \"#{in_path}\" -resize \"800x800>\" -bordercolor \"#89C997\" -border 20 \"#{out_path}\""
     
