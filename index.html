@@ -31,42 +31,68 @@
         const file = this.files[0];
         if (!file) return;
 
-        // Check file size (0.5MB = 524288 bytes)
+        // Check file size (Initial check for obvious large files)
         const MAX_SIZE = 0.5 * 1024 * 1024;
         if (file.size > MAX_SIZE) {
             alert('ファイルサイズは0.5MB以下にしてください。');
-            $(this).val(''); // Clear the input
-            $('#result').empty(); // Clear previous result
+            $(this).val(''); 
+            $('#result').empty(); 
             return;
         }
 
-        const formData = new FormData();
-        formData.append("image", file);
-        formData.append("shape", $('input[name="shape"]:checked').val());
-
         // Show loading state
-        $('#result').html('<p style="text-align:center;">処理中...</p>');
+        $('#result').html('<p style="text-align:center;">画像を変換・送信中...</p>');
 
-        $.ajax({
-            // Vercel Ruby API Endpoint
-            url: "/api/upload",
-            type: "POST",
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function (html) {
-                $('#result').html(html);
-            },
-            error: function(xhr, status, error) {
-                console.error("Error details:", xhr);
-                let msg = 'エラーが発生しました。';
-                if (xhr.responseText) {
-                    msg += '<br><small style="color:#666; font-family:monospace; display:block; margin-top:10px; text-align:left; background:#eee; padding:10px; border-radius:4px;">' + 
-                           xhr.responseText.replace(/\n/g, '<br>') + '</small>';
-                }
-                $('#result').html('<p style="color:red; text-align:center;">' + msg + '</p>');
-            }
-        });
+        // Convert to PNG using Canvas to ensure compatibility with backend (chunky_png)
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                
+                // Convert to PNG blob
+                canvas.toBlob(function(blob) {
+                    // Check converted size
+                    if (blob.size > MAX_SIZE) {
+                        $('#result').html('<p style="color:red; text-align:center;">変換後の画像サイズが0.5MBを超えました。<br>より小さい画像を使用してください。</p>');
+                        return;
+                    }
+
+                    const formData = new FormData();
+                    formData.append("image", blob, "converted.png");
+                    formData.append("shape", $('input[name="shape"]:checked').val());
+
+                    $.ajax({
+                        url: "/api/upload",
+                        type: "POST",
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        success: function (html) {
+                            $('#result').html(html);
+                        },
+                        error: function(xhr, status, error) {
+                            console.error("Error details:", xhr);
+                            let msg = 'エラーが発生しました。';
+                            if (xhr.responseText) {
+                                msg += '<br><small style="color:#666; font-family:monospace; display:block; margin-top:10px; text-align:left; background:#eee; padding:10px; border-radius:4px;">' + 
+                                       xhr.responseText.replace(/\n/g, '<br>') + '</small>';
+                            }
+                            $('#result').html('<p style="color:red; text-align:center;">' + msg + '</p>');
+                        }
+                    });
+                }, 'image/png');
+            };
+            img.onerror = function() {
+                $('#result').html('<p style="color:red; text-align:center;">画像の読み込みに失敗しました。</p>');
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
     });
     
     // Also trigger update when shape changes if file is selected
