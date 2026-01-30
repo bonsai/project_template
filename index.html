@@ -48,8 +48,14 @@
             success: function (html) {
                 $('#result').html(html);
             },
-            error: function() {
-                $('#result').html('<p style="color:red; text-align:center;">エラーが発生しました。</p>');
+            error: function(xhr, status, error) {
+                console.error("Error details:", xhr);
+                let msg = 'エラーが発生しました。';
+                if (xhr.responseText) {
+                    msg += '<br><small style="color:#666; font-family:monospace; display:block; margin-top:10px; text-align:left; background:#eee; padding:10px; border-radius:4px;">' + 
+                           xhr.responseText.replace(/\n/g, '<br>') + '</small>';
+                }
+                $('#result').html('<p style="color:red; text-align:center;">' + msg + '</p>');
             }
         });
     });

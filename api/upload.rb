@@ -54,18 +54,26 @@ Handler = Proc.new do |req, res|
     # 1. Base Composite (Square fixed for Circle)
     # Using existing frame logic for circle to maintain icon standard
     cmd = "magick \"#{in_path}\" -resize \"400x400^\" -gravity center -extent 400x400 \"#{frame_path}\" -gravity center -composite \"#{out_path}\""
-    system(cmd)
     
-    unless File.exist?(out_path)
+    stdout, stderr, status = Open3.capture3(cmd)
+    
+    unless status.success?
       res.status = 500
-      res.body = "ImageMagick processing failed. Command: #{cmd}"
+      res.body = "ImageMagick processing failed (Circle Base). Command: #{cmd}\nSTDERR: #{stderr}\nSTDOUT: #{stdout}"
       next
     end
 
     # 2. Crop circle
     tmp_circle = out_path + ".circle.png"
     cmd_circle = "magick \"#{out_path}\" ( +clone -alpha transparent -fill white -draw \"circle 200,200 200,0\" ) -compose DstIn -composite \"#{tmp_circle}\""
-    system(cmd_circle)
+    
+    stdout, stderr, status = Open3.capture3(cmd_circle)
+    
+    unless status.success?
+       res.status = 500
+       res.body = "ImageMagick processing failed (Circle Crop). Command: #{cmd_circle}\nSTDERR: #{stderr}"
+       next
+    end
     
     if File.exist?(tmp_circle)
       FileUtils.mv(tmp_circle, out_path)
@@ -77,13 +85,12 @@ Handler = Proc.new do |req, res|
     # Border width: 20px (fixed for simplicity, or could be relative)
     
     cmd = "magick \"#{in_path}\" -resize \"800x800>\" -bordercolor \"#89C997\" -border 20 \"#{out_path}\""
-    system(cmd)
     
-require 'base64'
-
-    unless File.exist?(out_path)
+    stdout, stderr, status = Open3.capture3(cmd)
+    
+    unless status.success?
       res.status = 500
-      res.body = "ImageMagick processing failed. Command: #{cmd}"
+      res.body = "ImageMagick processing failed (Border). Command: #{cmd}\nSTDERR: #{stderr}\nSTDOUT: #{stdout}"
       next
     end
   end
