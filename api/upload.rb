@@ -54,13 +54,21 @@ Handler = Proc.new do |req, res|
           "\\( +clone -alpha transparent -stroke \"#{border_color}\" -strokewidth #{border_width} -fill none -draw \"circle 200,200 200,#{border_width/2}\" \\) -compose Over -composite " +
           "\"#{out_path}\""
     
-    stdout, stderr, status = Open3.capture3(cmd)
+    # Use redirection to capture stderr, avoiding Open3 dependency
+    err_file = "/tmp/stderr_#{timestamp}.txt"
+    full_cmd = "#{cmd} 2> \"#{err_file}\""
     
-    unless status.success?
+    system(full_cmd)
+    success = $?.success?
+    
+    unless success
+      stderr = File.exist?(err_file) ? File.read(err_file) : "Unknown error"
       res.status = 500
-      res.body = "ImageMagick processing failed (Circle). Command: #{cmd}\nSTDERR: #{stderr}\nSTDOUT: #{stdout}"
+      res.body = "ImageMagick processing failed (Circle). Command: #{cmd}\nSTDERR: #{stderr}"
+      File.delete(err_file) rescue nil
       next
     end
+    File.delete(err_file) rescue nil
 
   else
     # Square with Border (Programmatic)
@@ -68,13 +76,21 @@ Handler = Proc.new do |req, res|
     
     cmd = "magick \"#{in_path}\" -resize \"800x800>\" -bordercolor \"#89C997\" -border 20 \"#{out_path}\""
     
-    stdout, stderr, status = Open3.capture3(cmd)
+    # Use redirection to capture stderr
+    err_file = "/tmp/stderr_#{timestamp}.txt"
+    full_cmd = "#{cmd} 2> \"#{err_file}\""
     
-    unless status.success?
+    system(full_cmd)
+    success = $?.success?
+    
+    unless success
+      stderr = File.exist?(err_file) ? File.read(err_file) : "Unknown error"
       res.status = 500
-      res.body = "ImageMagick processing failed (Border). Command: #{cmd}\nSTDERR: #{stderr}\nSTDOUT: #{stdout}"
+      res.body = "ImageMagick processing failed (Border). Command: #{cmd}\nSTDERR: #{stderr}"
+      File.delete(err_file) rescue nil
       next
     end
+    File.delete(err_file) rescue nil
   end
 
   # Return HTML with Base64 Image
