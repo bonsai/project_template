@@ -21,33 +21,46 @@
   <label><input type="radio" name="shape" value="circle"> 丸</label>
 </div>
 
-<img id="preview">
+<div id="result">
+        <!-- Result will be loaded here -->
+    </div>
 
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script>
-$('#file').on('change', function () {
-    const file = this.files[0];
-    if (!file) return;
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script>
+    $('#file').on('change', function () {
+        const file = this.files[0];
+        if (!file) return;
 
-    const formData = new FormData();
-    formData.append("image", file);
-    formData.append("shape", $('input[name="shape"]:checked').val());
+        const formData = new FormData();
+        formData.append("image", file);
+        formData.append("shape", $('input[name="shape"]:checked').val());
 
-    $.ajax({
-        // Vercel Ruby API Endpoint
-        url: "/api/upload",
-        type: "POST",
-        data: formData,
-        processData: false,
-        contentType: false,
-        xhrFields: { responseType: 'blob' },
-        success: function (blob) {
-            const url = URL.createObjectURL(blob);
-            $('#preview').attr('src', url);
+        // Show loading state
+        $('#result').html('<p style="text-align:center;">処理中...</p>');
+
+        $.ajax({
+            // Vercel Ruby API Endpoint
+            url: "/api/upload",
+            type: "POST",
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function (html) {
+                $('#result').html(html);
+            },
+            error: function() {
+                $('#result').html('<p style="color:red; text-align:center;">エラーが発生しました。</p>');
+            }
+        });
+    });
+    
+    // Also trigger update when shape changes if file is selected
+    $('input[name="shape"]').on('change', function() {
+        if ($('#file')[0].files.length > 0) {
+            $('#file').trigger('change');
         }
     });
-});
-</script>
+    </script>
 
 </body>
 </html>

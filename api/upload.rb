@@ -79,6 +79,8 @@ Handler = Proc.new do |req, res|
     cmd = "magick \"#{in_path}\" -resize \"800x800>\" -bordercolor \"#89C997\" -border 20 \"#{out_path}\""
     system(cmd)
     
+require 'base64'
+
     unless File.exist?(out_path)
       res.status = 500
       res.body = "ImageMagick processing failed. Command: #{cmd}"
@@ -86,10 +88,34 @@ Handler = Proc.new do |req, res|
     end
   end
 
-  # Return Binary Image directly
+  # Return HTML with Base64 Image
+  b64_data = Base64.strict_encode64(File.binread(out_path))
+  data_uri = "data:image/png;base64,#{b64_data}"
+  
   res.status = 200
-  res['Content-Type'] = 'image/png'
-  res.body = File.binread(out_path)
+  res['Content-Type'] = 'text/html; charset=utf-8'
+  
+  # Determine download filename
+  dl_filename = shape == 'circle' ? 'mirai_icon_circle.png' : 'mirai_image_framed.png'
+  
+  res.body = <<HTML
+<div class="result-container" style="text-align: center;">
+    <div class="result-item">
+        <img src="#{data_uri}" alt="Generated Image" style="max-width: 100%; border-radius: #{shape == 'circle' ? '50%' : '8px'}; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <div style="margin-top: 1rem;">
+            <a href="#{data_uri}" download="#{dl_filename}" class="btn btn-primary" style="
+                display: inline-block;
+                padding: 10px 20px;
+                background-color: #89C997;
+                color: white;
+                text-decoration: none;
+                border-radius: 5px;
+                font-weight: bold;
+            ">保存する</a>
+        </div>
+    </div>
+</div>
+HTML
   
   # Clean up temp files
   File.delete(in_path) rescue nil

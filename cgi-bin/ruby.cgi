@@ -95,6 +95,8 @@ begin
     cmd = "magick \"#{temp_file.path}\" -resize \"800x800>\" -bordercolor \"#89C997\" -border 20 \"#{out_path}\""
     system(cmd)
     
+require 'base64'
+
     unless $?.success?
       print "Content-type: text/plain\n"
       print "Status: 500 Internal Server Error\n\n"
@@ -103,18 +105,32 @@ begin
     end
   end
   
-  # Return Binary Image
-  file_size = File.size(out_path)
+  # Return HTML with Base64 Image
+  b64_data = Base64.strict_encode64(File.binread(out_path))
+  data_uri = "data:image/png;base64,#{b64_data}"
   
-  print "Content-type: image/png\n"
-  print "Content-Length: #{file_size}\n\n"
+  dl_filename = shape == 'circle' ? 'mirai_icon_circle.png' : 'mirai_image_framed.png'
   
-  # Stream file content
-  File.open(out_path, 'rb') do |f|
-    while chunk = f.read(8192)
-      print chunk
-    end
-  end
+  print "Content-type: text/html; charset=utf-8\n\n"
+  
+  print <<HTML
+<div class="result-container" style="text-align: center;">
+    <div class="result-item">
+        <img src="#{data_uri}" alt="Generated Image" style="max-width: 100%; border-radius: #{shape == 'circle' ? '50%' : '8px'}; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <div style="margin-top: 1rem;">
+            <a href="#{data_uri}" download="#{dl_filename}" class="btn btn-primary" style="
+                display: inline-block;
+                padding: 10px 20px;
+                background-color: #89C997;
+                color: white;
+                text-decoration: none;
+                border-radius: 5px;
+                font-weight: bold;
+            ">保存する</a>
+        </div>
+    </div>
+</div>
+HTML
 
 rescue => e
   print "Content-type: text/plain\n"

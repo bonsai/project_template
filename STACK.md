@@ -5,8 +5,7 @@
 - **Logic**:
   - User selects an image and a shape (Square/Circle).
   - Sends `multipart/form-data` to Backend.
-  - Receives Binary Image (Blob) response.
-  - Displays preview using `URL.createObjectURL(blob)`.
+  - Updates `#result` div with returned HTML fragment.
 - **UI**:
   - Simple HTML5 form.
   - No page reload (Single Page interaction).
@@ -24,7 +23,8 @@
     1. Resize uploaded image to 400x400 (Centered/Cover).
     2. Composite with Frame (`frames/default.png` or `mirai_frame.png`).
     3. (Optional) Mask to Circle if requested.
-  - **Output**: Returns raw image binary (`image/png`).
+    4. Encodes result to Base64.
+  - **Output**: Returns HTML fragment with Data URI image and download link.
 
 ## Files
 - `index.html`: Frontend UI.
