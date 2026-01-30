@@ -4,6 +4,8 @@
 require 'cgi'
 require 'fileutils'
 require 'tempfile'
+require 'base64'
+require 'chunky_png'
 
 # Initialize CGI
 cgi = CGI.new
@@ -29,56 +31,86 @@ begin
     exit
   end
 
-  # Save to temp file
-  temp_file = Tempfile.new(['upload', '.png'])
-  temp_file.binmode
-  temp_file.write(icon_image.read)
-  temp_file.close
-
-  require 'base64'
-
-  # Setup output file
-  out_dir = "../output"
-  FileUtils.mkdir_p(out_dir) unless Dir.exist?(out_dir)
+  # Load image using ChunkyPNG
+  image = ChunkyPNG::Image.from_blob(icon_image.read)
   
-  timestamp = Time.now.to_f
-  out_path = File.join(out_dir, "generated_#{timestamp}.png")
+  # Border color: #89C997
+  border_color = ChunkyPNG::Color.from_hex('#89C997')
+  border_width = 20
   
-  # ImageMagick Command
   if shape == 'circle'
-    # Circle with Border (Programmatic)
-    border_color = "#89C997"
-    border_width = 20
+    # 1. Resize/Crop to square 400x400
+    target_size = 400
     
-    cmd = "magick \"#{temp_file.path}\" -resize \"400x400^\" -gravity center -extent 400x400 " +
-          "\\( +clone -alpha transparent -fill white -draw \"circle 200,200 200,0\" \\) -compose DstIn -composite " +
-          "\\( +clone -alpha transparent -stroke \"#{border_color}\" -strokewidth #{border_width} -fill none -draw \"circle 200,200 200,#{border_width/2}\" \\) -compose Over -composite " +
-          "\"#{out_path}\""
-          
-    system(cmd)
+    # Calculate dimensions to cover 400x400
+    ratio = [target_size.to_f / image.width, target_size.to_f / image.height].max
+    new_width = (image.width * ratio).round
+    new_height = (image.height * ratio).round
     
-    unless $?.success?
-      print "Content-type: text/plain\n"
-      print "Status: 500 Internal Server Error\n\n"
-      print "Error: Failed to execute ImageMagick (Circle)."
-      exit
+    # Resize
+    image.resample_bilinear!(new_width, new_height)
+    
+    # Center crop to 400x400
+    x_offset = (new_width - target_size) / 2
+    y_offset = (new_height - target_size) / 2
+    image.crop!(x_offset, y_offset, target_size, target_size)
+    
+    # 2. Mask to Circle and draw border
+    radius = target_size / 2
+    center_x = radius
+    center_y = radius
+    radius_sq = radius**2
+    inner_radius_sq = (radius - border_width)**2
+    
+    # Create new transparent image
+    final_image = ChunkyPNG::Image.new(target_size, target_size, ChunkyPNG::Color::TRANSPARENT)
+    
+    # Pixel manipulation
+    target_size.times do |y|
+      target_size.times do |x|
+        dx = x - center_x
+        dy = y - center_y
+        dist_sq = dx**2 + dy**2
+        
+        if dist_sq <= inner_radius_sq
+          # Inside inner circle: copy original pixel
+          final_image[x, y] = image[x, y]
+        elsif dist_sq <= radius_sq
+          # Inside border area: draw border color
+          final_image[x, y] = border_color
+        else
+          # Outside circle: transparent (default)
+        end
+      end
     end
-
+    
+    out_blob = final_image.to_blob
+    
   else
-    # Square with Border (Programmatic)
-    cmd = "magick \"#{temp_file.path}\" -resize \"800x800>\" -bordercolor \"#89C997\" -border 20 \"#{out_path}\""
-    system(cmd)
-    
-    unless $?.success?
-      print "Content-type: text/plain\n"
-      print "Status: 500 Internal Server Error\n\n"
-      print "Error: Failed to execute ImageMagick (Border)."
-      exit
+    # Square with Border
+    # Resize to max 800x800 if larger, preserving aspect ratio
+    max_size = 800
+    if image.width > max_size || image.height > max_size
+      ratio = [max_size.to_f / image.width, max_size.to_f / image.height].min
+      new_width = (image.width * ratio).round
+      new_height = (image.height * ratio).round
+      image.resample_bilinear!(new_width, new_height)
     end
+    
+    # Add border
+    # Create new image with border dimensions
+    new_width = image.width + (border_width * 2)
+    new_height = image.height + (border_width * 2)
+    final_image = ChunkyPNG::Image.new(new_width, new_height, border_color)
+    
+    # Composite original image onto center
+    final_image.compose!(image, border_width, border_width)
+    
+    out_blob = final_image.to_blob
   end
   
   # Return HTML with Base64 Image
-  b64_data = Base64.strict_encode64(File.binread(out_path))
+  b64_data = Base64.strict_encode64(out_blob)
   data_uri = "data:image/png;base64,#{b64_data}"
   
   dl_filename = shape == 'circle' ? 'mirai_icon_circle.png' : 'mirai_image_framed.png'
@@ -107,5 +139,5 @@ HTML
 rescue => e
   print "Content-type: text/plain\n"
   print "Status: 500 Internal Server Error\n\n"
-  print "Error: #{e.message}"
+  print "Error: #{e.message}\n#{e.backtrace.join("\n")}"
 end

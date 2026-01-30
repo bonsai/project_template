@@ -1,6 +1,8 @@
 require 'webrick'
 require 'tempfile'
 require 'fileutils'
+require 'base64'
+require 'chunky_png'
 
 # Vercel Ruby Handler
 Handler = Proc.new do |req, res|
@@ -11,9 +13,6 @@ Handler = Proc.new do |req, res|
   end
 
   # Handle Multipart Form Data
-  # Vercel's WEBrick wrapper should handle parsing automatically if Content-Type is correct
-  # req.query contains params
-  
   file_data = req.query['image'] || req.query['icon_image']
   shape = req.query['shape'] || 'square'
   
@@ -26,84 +25,97 @@ Handler = Proc.new do |req, res|
   # file_data can be a String or WEBrick::HTTPUtils::FormData
   content = file_data.to_s
   
-  # Write input to /tmp (Vercel's writable directory)
-  timestamp = Time.now.to_f
-  in_path = "/tmp/input_#{timestamp}.png"
-  File.binwrite(in_path, content)
-  
-  out_path = "/tmp/output_#{timestamp}.png"
-
-  # ImageMagick commands
-  if shape == 'circle'
-    # Circle with Border (Programmatic)
-    # 1. Resize/Crop to square 400x400
-    # 2. Mask to Circle
-    # 3. Draw Green Border
+  begin
+    # Load image using ChunkyPNG
+    image = ChunkyPNG::Image.from_blob(content)
     
-    # Border settings
-    border_color = "#89C997"
+    # Border color: #89C997
+    border_color = ChunkyPNG::Color.from_hex('#89C997')
     border_width = 20
     
-    # Complex command:
-    # - Resize/Extent to 400x400
-    # - Clone image -> Create Circle Mask -> Apply Mask (DstIn)
-    # - Clone result -> Clear transparent -> Draw Circle Stroke -> Composite Over
-    
-    cmd = "magick \"#{in_path}\" -resize \"400x400^\" -gravity center -extent 400x400 " +
-          "\\( +clone -alpha transparent -fill white -draw \"circle 200,200 200,0\" \\) -compose DstIn -composite " +
-          "\\( +clone -alpha transparent -stroke \"#{border_color}\" -strokewidth #{border_width} -fill none -draw \"circle 200,200 200,#{border_width/2}\" \\) -compose Over -composite " +
-          "\"#{out_path}\""
-    
-    # Use redirection to capture stderr, avoiding Open3 dependency
-    err_file = "/tmp/stderr_#{timestamp}.txt"
-    full_cmd = "#{cmd} 2> \"#{err_file}\""
-    
-    system(full_cmd)
-    success = $?.success?
-    
-    unless success
-      stderr = File.exist?(err_file) ? File.read(err_file) : "Unknown error"
-      res.status = 500
-      res.body = "ImageMagick processing failed (Circle). Command: #{cmd}\nSTDERR: #{stderr}"
-      File.delete(err_file) rescue nil
-      next
+    if shape == 'circle'
+      # 1. Resize/Crop to square 400x400
+      target_size = 400
+      
+      # Calculate dimensions to cover 400x400
+      ratio = [target_size.to_f / image.width, target_size.to_f / image.height].max
+      new_width = (image.width * ratio).round
+      new_height = (image.height * ratio).round
+      
+      # Resize
+      image.resample_bilinear!(new_width, new_height)
+      
+      # Center crop to 400x400
+      x_offset = (new_width - target_size) / 2
+      y_offset = (new_height - target_size) / 2
+      image.crop!(x_offset, y_offset, target_size, target_size)
+      
+      # 2. Mask to Circle and draw border
+      radius = target_size / 2
+      center_x = radius
+      center_y = radius
+      radius_sq = radius**2
+      inner_radius_sq = (radius - border_width)**2
+      
+      # Create new transparent image
+      final_image = ChunkyPNG::Image.new(target_size, target_size, ChunkyPNG::Color::TRANSPARENT)
+      
+      # Pixel manipulation
+      target_size.times do |y|
+        target_size.times do |x|
+          dx = x - center_x
+          dy = y - center_y
+          dist_sq = dx**2 + dy**2
+          
+          if dist_sq <= inner_radius_sq
+            # Inside inner circle: copy original pixel
+            final_image[x, y] = image[x, y]
+          elsif dist_sq <= radius_sq
+            # Inside border area: draw border color
+            # Simple anti-aliasing logic could go here, but keeping it simple for now
+            final_image[x, y] = border_color
+          else
+            # Outside circle: transparent (default)
+          end
+        end
+      end
+      
+      out_blob = final_image.to_blob
+      
+    else
+      # Square with Border
+      # Resize to max 800x800 if larger, preserving aspect ratio
+      max_size = 800
+      if image.width > max_size || image.height > max_size
+        ratio = [max_size.to_f / image.width, max_size.to_f / image.height].min
+        new_width = (image.width * ratio).round
+        new_height = (image.height * ratio).round
+        image.resample_bilinear!(new_width, new_height)
+      end
+      
+      # Add border
+      # Create new image with border dimensions
+      new_width = image.width + (border_width * 2)
+      new_height = image.height + (border_width * 2)
+      final_image = ChunkyPNG::Image.new(new_width, new_height, border_color)
+      
+      # Composite original image onto center
+      final_image.compose!(image, border_width, border_width)
+      
+      out_blob = final_image.to_blob
     end
-    File.delete(err_file) rescue nil
 
-  else
-    # Square with Border (Programmatic)
-    # Keep original aspect ratio, resize if too large, add simple colored border
+    # Return HTML with Base64 Image
+    b64_data = Base64.strict_encode64(out_blob)
+    data_uri = "data:image/png;base64,#{b64_data}"
     
-    cmd = "magick \"#{in_path}\" -resize \"800x800>\" -bordercolor \"#89C997\" -border 20 \"#{out_path}\""
+    res.status = 200
+    res['Content-Type'] = 'text/html; charset=utf-8'
     
-    # Use redirection to capture stderr
-    err_file = "/tmp/stderr_#{timestamp}.txt"
-    full_cmd = "#{cmd} 2> \"#{err_file}\""
+    # Determine download filename
+    dl_filename = shape == 'circle' ? 'mirai_icon_circle.png' : 'mirai_image_framed.png'
     
-    system(full_cmd)
-    success = $?.success?
-    
-    unless success
-      stderr = File.exist?(err_file) ? File.read(err_file) : "Unknown error"
-      res.status = 500
-      res.body = "ImageMagick processing failed (Border). Command: #{cmd}\nSTDERR: #{stderr}"
-      File.delete(err_file) rescue nil
-      next
-    end
-    File.delete(err_file) rescue nil
-  end
-
-  # Return HTML with Base64 Image
-  b64_data = Base64.strict_encode64(File.binread(out_path))
-  data_uri = "data:image/png;base64,#{b64_data}"
-  
-  res.status = 200
-  res['Content-Type'] = 'text/html; charset=utf-8'
-  
-  # Determine download filename
-  dl_filename = shape == 'circle' ? 'mirai_icon_circle.png' : 'mirai_image_framed.png'
-  
-  res.body = <<HTML
+    res.body = <<HTML
 <div class="result-container" style="text-align: center;">
     <div class="result-item">
         <img src="#{data_uri}" alt="Generated Image" style="max-width: 100%; border-radius: #{shape == 'circle' ? '50%' : '8px'}; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
@@ -121,8 +133,9 @@ Handler = Proc.new do |req, res|
     </div>
 </div>
 HTML
-  
-  # Clean up temp files
-  File.delete(in_path) rescue nil
-  File.delete(out_path) rescue nil
+
+  rescue => e
+    res.status = 500
+    res.body = "Processing failed: #{e.message}\n#{e.backtrace.join("\n")}"
+  end
 end

@@ -18,12 +18,12 @@
   - `webrick` (for Vercel/Local request handling)
   - `fileutils`, `tempfile` (Standard Libs)
 - **Image Processing**:
-  - **Tool**: ImageMagick (`magick` CLI)
+  - **Tool**: ChunkyPNG
   - **Process**:
     1. Receives image via POST.
-    2. Resizes and applies border using ImageMagick (Programmatic, no frame images).
+    2. Resizes and applies border using **ChunkyPNG** (Pure Ruby, no ImageMagick dependency).
        - **Square**: Resizes to max 800x800, adds 20px border.
-       - **Circle**: Resizes to 400x400 square, crops to circle, draws 20px stroke border.
+       - **Circle**: Resizes/Crops to 400x400, applies circular mask, draws 20px border.
     3. Encodes result to Base64.
     4. Returns HTML fragment with Data URI image and download link.
 
