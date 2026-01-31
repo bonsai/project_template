@@ -1,6 +1,0 @@
-output/
-__pycache__/
-*.tmp
-.DS_Store
-Thumbs.db
-*.log

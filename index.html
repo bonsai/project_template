@@ -2,106 +2,356 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>枠付き画像ジェネレーター</title>
+<title>ミントグリーン枠ジェネレーター</title>
 <style>
-#preview {
-  max-width: 300px;
-  margin-top: 20px;
+:root {
+  --mint: #89C997;
+  --mint-dark: #6FB988;
+  --mint-light: #CFF0DD;
+  --ink: #23323A;
+  --bg: #F7FBF9;
+  --card: #FFFFFF;
+  --shadow: 0 14px 32px rgba(34, 60, 80, 0.12);
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  font-family: "Segoe UI", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  background: radial-gradient(circle at top, #E9FAF2 0%, #F7FBF9 55%, #FFFFFF 100%);
+  color: var(--ink);
+}
+.page {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 40px 28px 60px;
+}
+.hero {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 28px;
+  align-items: center;
+  margin-bottom: 26px;
+}
+.hero-title {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  margin: 0 0 10px;
+}
+.hero-sub {
+  font-size: 15px;
+  line-height: 1.8;
+  margin: 0;
+  color: #4C5A62;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--mint-light);
+  color: var(--mint-dark);
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+}
+.card {
+  background: var(--card);
+  border-radius: 22px;
+  box-shadow: var(--shadow);
+  padding: 28px;
+}
+.dropzone {
+  border: 2px dashed #A7DEC4;
+  border-radius: 18px;
+  padding: 28px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  background: #F4FFF9;
+  transition: all 0.2s ease;
+}
+.dropzone.is-dragover {
+  border-color: var(--mint);
+  background: #E8FFF3;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(137, 201, 151, 0.18);
+}
+.dropzone-icon {
+  width: 72px;
+  height: 72px;
+  flex: 0 0 72px;
+  background: var(--mint);
+  border-radius: 20px;
+  display: grid;
+  place-items: center;
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.5);
+}
+.dropzone-body {
+  flex: 1;
+}
+.dropzone-title {
+  font-weight: 700;
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+.dropzone-text {
+  margin: 0;
+  font-size: 14px;
+  color: #4C5A62;
+}
+.file-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+.file-button {
+  background: var(--mint);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(137, 201, 151, 0.3);
+}
+.file-name {
+  font-size: 13px;
+  color: #526069;
+}
+.shape-group {
+  display: flex;
+  gap: 12px;
+  margin-top: 22px;
+}
+.shape-option {
+  position: relative;
+  flex: 1;
+}
+.shape-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.shape-pill {
+  display: block;
+  text-align: center;
+  padding: 10px 12px;
+  border-radius: 999px;
+  background: #F0F5F3;
+  font-weight: 700;
+  color: #4A585F;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.shape-option input:checked + .shape-pill {
+  background: var(--mint);
+  color: #fff;
+  border-color: #7BCF9F;
+  box-shadow: 0 6px 14px rgba(137, 201, 151, 0.35);
+}
+.result {
+  margin-top: 26px;
+  background: #FFFFFF;
+  border-radius: 18px;
+  padding: 18px;
+  border: 1px solid #ECF4F0;
+  min-height: 120px;
+}
+.result p {
+  margin: 0;
+}
+.helper {
+  font-size: 12px;
+  color: #6C7A82;
+  margin-top: 10px;
+}
+.hero-visual {
+  display: grid;
+  place-items: center;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #E2F8EE 0%, #F8FFFB 100%);
+  padding: 22px;
+}
+.hero-visual svg {
+  width: 160px;
+  height: 160px;
+}
+@media (max-width: 900px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
 </head>
 <body>
 
-<h2>画像アップロード（枠付き自動合成）</h2>
+<div class="page">
+  <div class="hero">
+    <div>
+      <span class="badge">Mint Green Icon</span>
+      <h1 class="hero-title">ミントグリーン枠ジェネレーター</h1>
+      <p class="hero-sub">画像をドラッグ＆ドロップするだけで、ポップなミントグリーン枠付きアイコンを即生成。PC向けに見やすく、作業がはかどるUIにしました。</p>
+    </div>
+    <div class="hero-visual">
+      <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect x="20" y="20" width="160" height="160" rx="28" fill="#89C997"/>
+        <rect x="38" y="38" width="124" height="124" rx="22" fill="#CFF0DD"/>
+        <circle cx="100" cy="96" r="38" fill="#FFFFFF"/>
+        <path d="M72 122C82 110 92 104 100 104C108 104 118 110 128 122" stroke="#6FB988" stroke-width="10" stroke-linecap="round"/>
+      </svg>
+    </div>
+  </div>
 
-<input type="file" id="file" accept="image/*">
-
-<div>
-  <label><input type="radio" name="shape" value="square" checked> 四角</label>
-  <label><input type="radio" name="shape" value="circle"> 丸</label>
-</div>
-
-<div id="result">
-        <!-- Result will be loaded here -->
+  <div class="card">
+    <div id="dropzone" class="dropzone">
+      <div class="dropzone-icon">
+        <svg viewBox="0 0 64 64" width="40" height="40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M32 10L18 26H26V42H38V26H46L32 10Z" fill="#FFFFFF"/>
+          <rect x="14" y="44" width="36" height="8" rx="4" fill="#FFFFFF"/>
+        </svg>
+      </div>
+      <div class="dropzone-body">
+        <p class="dropzone-title">画像をここにドロップ</p>
+        <p class="dropzone-text">クリックして選択もOK。0.5MB以下の画像に対応しています。</p>
+        <div class="file-actions">
+          <label class="file-button" for="file">画像を選ぶ</label>
+          <span id="fileName" class="file-name">未選択</span>
+        </div>
+      </div>
     </div>
 
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script>
-    $('#file').on('change', function () {
-        const file = this.files[0];
-        if (!file) return;
+    <input type="file" id="file" accept="image/*" hidden>
 
-        // Check file size (Initial check for obvious large files)
-        const MAX_SIZE = 0.5 * 1024 * 1024;
-        if (file.size > MAX_SIZE) {
-            alert('ファイルサイズは0.5MB以下にしてください。');
-            $(this).val(''); 
-            $('#result').empty(); 
-            return;
+    <div class="shape-group">
+      <label class="shape-option">
+        <input type="radio" name="shape" value="square" checked>
+        <span class="shape-pill">スクエア</span>
+      </label>
+      <label class="shape-option">
+        <input type="radio" name="shape" value="circle">
+        <span class="shape-pill">サークル</span>
+      </label>
+    </div>
+
+    <div id="result" class="result"></div>
+    <p class="helper">アップロード後に保存ボタンが表示されます。</p>
+  </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script>
+const MAX_SIZE = 0.5 * 1024 * 1024;
+let currentFile = null;
+
+const $fileInput = $('#file');
+const $result = $('#result');
+const $fileName = $('#fileName');
+const $dropzone = $('#dropzone');
+
+function setResultMessage(html) {
+  $result.html(html);
+}
+
+function handleFile(file) {
+  if (!file) return;
+  if (!file.type.startsWith('image/')) {
+    setResultMessage('<p style="color:red; text-align:center;">画像ファイルを選択してください。</p>');
+    return;
+  }
+
+  if (file.size > MAX_SIZE) {
+    setResultMessage('<p style="color:red; text-align:center;">ファイルサイズは0.5MB以下にしてください。</p>');
+    return;
+  }
+
+  currentFile = file;
+  $fileName.text(file.name);
+  setResultMessage('<p style="text-align:center;">画像を変換・送信中...</p>');
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+
+      canvas.toBlob(function(blob) {
+        if (blob.size > MAX_SIZE) {
+          setResultMessage('<p style="color:red; text-align:center;">変換後の画像サイズが0.5MBを超えました。<br>より小さい画像を使用してください。</p>');
+          return;
         }
 
-        // Show loading state
-        $('#result').html('<p style="text-align:center;">画像を変換・送信中...</p>');
+        const formData = new FormData();
+        formData.append("image", blob, "converted.png");
+        formData.append("shape", $('input[name="shape"]:checked').val());
 
-        // Convert to PNG using Canvas to ensure compatibility with backend (chunky_png)
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const img = new Image();
-            img.onload = function() {
-                const canvas = document.createElement('canvas');
-                canvas.width = img.width;
-                canvas.height = img.height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0);
-                
-                // Convert to PNG blob
-                canvas.toBlob(function(blob) {
-                    // Check converted size
-                    if (blob.size > MAX_SIZE) {
-                        $('#result').html('<p style="color:red; text-align:center;">変換後の画像サイズが0.5MBを超えました。<br>より小さい画像を使用してください。</p>');
-                        return;
-                    }
+        $.ajax({
+          url: "/api/upload",
+          type: "POST",
+          data: formData,
+          processData: false,
+          contentType: false,
+          success: function (html) {
+            $result.html(html);
+          },
+          error: function(xhr) {
+            let msg = 'エラーが発生しました。';
+            if (xhr.responseText) {
+              msg += '<br><small style="color:#666; font-family:monospace; display:block; margin-top:10px; text-align:left; background:#eee; padding:10px; border-radius:4px;">' +
+                     xhr.responseText.replace(/\n/g, '<br>') + '</small>';
+            }
+            setResultMessage('<p style="color:red; text-align:center;">' + msg + '</p>');
+          }
+        });
+      }, 'image/png');
+    };
+    img.onerror = function() {
+      setResultMessage('<p style="color:red; text-align:center;">画像の読み込みに失敗しました。</p>');
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
 
-                    const formData = new FormData();
-                    formData.append("image", blob, "converted.png");
-                    formData.append("shape", $('input[name="shape"]:checked').val());
+$fileInput.on('change', function () {
+  const file = this.files[0];
+  handleFile(file);
+});
 
-                    $.ajax({
-                        url: "/api/upload",
-                        type: "POST",
-                        data: formData,
-                        processData: false,
-                        contentType: false,
-                        success: function (html) {
-                            $('#result').html(html);
-                        },
-                        error: function(xhr, status, error) {
-                            console.error("Error details:", xhr);
-                            let msg = 'エラーが発生しました。';
-                            if (xhr.responseText) {
-                                msg += '<br><small style="color:#666; font-family:monospace; display:block; margin-top:10px; text-align:left; background:#eee; padding:10px; border-radius:4px;">' + 
-                                       xhr.responseText.replace(/\n/g, '<br>') + '</small>';
-                            }
-                            $('#result').html('<p style="color:red; text-align:center;">' + msg + '</p>');
-                        }
-                    });
-                }, 'image/png');
-            };
-            img.onerror = function() {
-                $('#result').html('<p style="color:red; text-align:center;">画像の読み込みに失敗しました。</p>');
-            };
-            img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-    });
-    
-    // Also trigger update when shape changes if file is selected
-    $('input[name="shape"]').on('change', function() {
-        if ($('#file')[0].files.length > 0) {
-            $('#file').trigger('change');
-        }
-    });
-    </script>
+$dropzone.on('dragenter dragover', function(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  $dropzone.addClass('is-dragover');
+});
+
+$dropzone.on('dragleave', function(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  $dropzone.removeClass('is-dragover');
+});
+
+$dropzone.on('drop', function(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  $dropzone.removeClass('is-dragover');
+  const file = e.originalEvent.dataTransfer.files[0];
+  handleFile(file);
+});
+
+$('input[name="shape"]').on('change', function() {
+  if (currentFile) {
+    handleFile(currentFile);
+  }
+});
+</script>
 
 </body>
 </html>

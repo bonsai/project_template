@@ -41,52 +41,44 @@ Handler = Proc.new do |req, res|
     border_width = 20
     
     if shape == 'circle'
-      # 1. Resize/Crop to square 400x400
       target_size = 400
+      scale = 2
+      render_size = target_size * scale
+      border_width_scaled = border_width * scale
       
-      # Calculate dimensions to cover 400x400
-      ratio = [target_size.to_f / image.width, target_size.to_f / image.height].max
+      ratio = [render_size.to_f / image.width, render_size.to_f / image.height].max
       new_width = (image.width * ratio).round
       new_height = (image.height * ratio).round
       
-      # Resize
       image.resample_bilinear!(new_width, new_height)
       
-      # Center crop to 400x400
-      x_offset = (new_width - target_size) / 2
-      y_offset = (new_height - target_size) / 2
-      image.crop!(x_offset, y_offset, target_size, target_size)
+      x_offset = (new_width - render_size) / 2
+      y_offset = (new_height - render_size) / 2
+      image.crop!(x_offset, y_offset, render_size, render_size)
       
-      # 2. Mask to Circle and draw border
-      radius = target_size / 2
+      radius = render_size / 2
       center_x = radius
       center_y = radius
       radius_sq = radius**2
-      inner_radius_sq = (radius - border_width)**2
+      inner_radius_sq = (radius - border_width_scaled)**2
       
-      # Create new transparent image
-      final_image = ChunkyPNG::Image.new(target_size, target_size, ChunkyPNG::Color::TRANSPARENT)
+      final_image = ChunkyPNG::Image.new(render_size, render_size, ChunkyPNG::Color::TRANSPARENT)
       
-      # Pixel manipulation
-      target_size.times do |y|
-        target_size.times do |x|
+      render_size.times do |y|
+        render_size.times do |x|
           dx = x - center_x
           dy = y - center_y
           dist_sq = dx**2 + dy**2
           
           if dist_sq <= inner_radius_sq
-            # Inside inner circle: copy original pixel
             final_image[x, y] = image[x, y]
           elsif dist_sq <= radius_sq
-            # Inside border area: draw border color
-            # Simple anti-aliasing logic could go here, but keeping it simple for now
             final_image[x, y] = border_color
-          else
-            # Outside circle: transparent (default)
           end
         end
       end
       
+      final_image.resample_bilinear!(target_size, target_size)
       out_blob = final_image.to_blob
       
     else
