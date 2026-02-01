@@ -121,19 +121,24 @@ begin
   print "Content-type: text/html; charset=utf-8\n\n"
   
   print <<HTML
-<div class="result-container" style="text-align: center;">
+<div class="result-container" style="text-align: center; animation: fadeIn 0.5s ease;">
     <div class="result-item">
-        <img src="#{data_uri}" alt="Generated Image" style="max-width: 100%; border-radius: #{shape == 'circle' ? '50%' : '8px'}; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-        <div style="margin-top: 1rem;">
-            <a href="#{data_uri}" download="#{dl_filename}" class="btn btn-primary" style="
-                display: inline-block;
-                padding: 10px 20px;
-                background-color: #89C997;
-                color: white;
+        <img src="#{data_uri}" alt="Generated Image" style="max-width: 100%; border-radius: #{shape == 'circle' ? '50%' : '22px'}; box-shadow: 0 8px 20px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);">
+        <div style="margin-top: 24px;">
+            <a href="#{data_uri}" download="#{dl_filename}" style="
+                background-color: #34C759;
+                color: #FFFFFF;
+                border: none;
+                border-radius: 999px;
+                padding: 12px 32px;
+                font-weight: 600;
+                font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+                box-shadow: 0 4px 12px rgba(52, 199, 89, 0.4);
                 text-decoration: none;
-                border-radius: 5px;
-                font-weight: bold;
-            ">保存する</a>
+                display: inline-block;
+                font-size: 16px;
+                transition: opacity 0.2s;
+            " onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">保存する</a>
         </div>
     </div>
 </div>
