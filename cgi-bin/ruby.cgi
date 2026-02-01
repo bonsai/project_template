@@ -50,7 +50,7 @@ begin
   
   if shape == 'circle'
     target_size = 400
-    scale = 2
+    scale = 4
     render_size = target_size * scale
     border_width_scaled = border_width * scale
     
@@ -126,19 +126,25 @@ begin
         <img src="#{data_uri}" alt="Generated Image" style="max-width: 100%; border-radius: #{shape == 'circle' ? '50%' : '22px'}; box-shadow: 0 8px 20px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);">
         <div style="margin-top: 24px;">
             <a href="#{data_uri}" download="#{dl_filename}" style="
-                background-color: #34C759;
+                background-color: #89C997;
                 color: #FFFFFF;
                 border: none;
                 border-radius: 999px;
-                padding: 12px 32px;
-                font-weight: 600;
-                font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-                box-shadow: 0 4px 12px rgba(52, 199, 89, 0.4);
+                width: 64px;
+                height: 64px;
+                display: inline-flex;
+                justify-content: center;
+                align-items: center;
+                box-shadow: 0 4px 12px rgba(137, 201, 151, 0.4);
                 text-decoration: none;
-                display: inline-block;
-                font-size: 16px;
                 transition: opacity 0.2s;
-            " onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">保存する</a>
+            " onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+            </a>
         </div>
     </div>
 </div>
