@@ -31,13 +31,13 @@ begin
     exit
   end
 
-  # Check file size (0.5MB limit)
+  # Check file size (5MB limit)
   # icon_image is a StringIO or Tempfile, depending on size. 
   # .size method works for both.
-  if icon_image.size > 0.5 * 1024 * 1024
+  if icon_image.size > 5 * 1024 * 1024
     print "Content-type: text/plain\n"
     print "Status: 413 Payload Too Large\n\n"
-    print "Error: File size exceeds 0.5MB limit"
+    print "Error: File size exceeds 5MB limit"
     exit
   end
 

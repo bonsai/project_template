@@ -25,10 +25,10 @@ Handler = Proc.new do |req, res|
   # file_data can be a String or WEBrick::HTTPUtils::FormData
   content = file_data.to_s
   
-  # Check file size (0.5MB limit)
-  if content.bytesize > 0.5 * 1024 * 1024
+  # Check file size (5MB limit)
+  if content.bytesize > 5 * 1024 * 1024
     res.status = 413 # Payload Too Large
-    res.body = "File size exceeds 0.5MB limit"
+    res.body = "File size exceeds 5MB limit"
     next
   end
 

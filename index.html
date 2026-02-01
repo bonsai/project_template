@@ -201,21 +201,18 @@ h1 {
     </div>
     <div class="text-center">
       <h1>みらい枠</h1>
-      <p class="subtitle">直感的なデザインツール</p>
     </div>
   </header>
 
   <main class="card">
     <div id="dropzone" class="dropzone">
       <div class="dropzone-icon">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#34C759" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
           <circle cx="8.5" cy="8.5" r="1.5"></circle>
           <polyline points="21 15 16 10 5 21"></polyline>
         </svg>
       </div>
-      <p>写真を選ぶ</p>
-      <div class="sub-text">またはここにドロップ</div>
     </div>
     <input type="file" id="file" accept="image/*" hidden>
 
@@ -239,7 +236,7 @@ h1 {
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script>
-const MAX_SIZE = 0.5 * 1024 * 1024;
+const MAX_SIZE = 5 * 1024 * 1024;
 let currentFile = null;
 
 const $fileInput = $('#file');
@@ -258,7 +255,7 @@ function handleFile(file) {
   }
 
   if (file.size > MAX_SIZE) {
-    setResultMessage('<p style="color:#FF453A; text-align:center;">ファイルサイズは0.5MB以下にしてください。</p>');
+    setResultMessage('<p style="color:#FF453A; text-align:center;">5MB以下にしてください。</p>');
     return;
   }
 
@@ -277,7 +274,7 @@ function handleFile(file) {
 
       canvas.toBlob(function(blob) {
         if (blob.size > MAX_SIZE) {
-          setResultMessage('<p style="color:#FF453A; text-align:center;">変換後のサイズが大きすぎます。</p>');
+          setResultMessage('<p style="color:#FF453A; text-align:center;">5MBを超えました。</p>');
           return;
         }
 
